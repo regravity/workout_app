@@ -1,0 +1,1380 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>NightRun &amp; Build — 18時からの運動習慣トラッカー</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'Noto Sans JP', 'sans-serif'],
+          },
+          colors: {
+            night: {
+              950: '#070B12',
+              900: '#0D131F',
+              800: '#151E2E',
+              700: '#1E293B',
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    body {
+      background-color: #F4F7FB;
+      color: #0F172A;
+      -webkit-tap-highlight-color: transparent;
+      overscroll-behavior-y: contain;
+    }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .ring-transition {
+      transition: stroke-dashoffset 0.35s linear;
+    }
+  </style>
+</head>
+<body class="font-sans antialiased selection:bg-orange-200 selection:text-orange-900">
+
+  <!-- App Shell -->
+  <div class="max-w-md mx-auto min-h-screen flex flex-col bg-gradient-to-b from-sky-50/90 via-slate-50 to-orange-50/40 relative shadow-xl shadow-slate-300/50 border-x border-slate-200/80">
+
+    <!-- Top Header -->
+    <header class="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 via-amber-400 to-sky-500 flex items-center justify-center shadow-md shadow-orange-500/25">
+          <i data-lucide="zap" class="w-5 h-5 text-white stroke-[2.5]"></i>
+        </div>
+        <div>
+          <h1 class="text-sm font-extrabold tracking-tight text-slate-900 leading-tight">NightRun &amp; Build</h1>
+          <p id="header-date-label" class="text-[11px] text-slate-500 font-medium">18:00 ルーティン</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="btn-sound-toggle" type="button" aria-label="タイマー音の切り替え"
+          class="h-10 px-3 rounded-xl bg-slate-100 border border-slate-200 flex items-center gap-1.5 text-xs font-semibold text-slate-700 active:scale-95 transition">
+          <i id="icon-sound" data-lucide="volume-2" class="w-4 h-4 text-sky-400"></i>
+          <span id="label-sound">音 ON</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 px-4 pt-3 pb-28 space-y-4">
+
+      <!-- VIEW 1: TODAY -->
+      <section id="view-today" class="space-y-4">
+        <!-- Day Selector Strip -->
+        <div class="flex items-center justify-between gap-1 bg-white p-1.5 rounded-2xl border border-slate-200/90 shadow-sm">
+          <!-- Rendered by JS -->
+          <div id="day-pills" class="grid grid-cols-7 gap-1 w-full"></div>
+        </div>
+
+        <!-- Day Summary & Override Card -->
+        <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-4 space-y-3">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span id="plan-badge" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-sky-500/15 text-sky-300 border border-sky-500/30">
+                  筋トレ
+                </span>
+                <span id="plan-duration" class="text-xs text-slate-500 font-medium">約20分・18:00〜</span>
+              </div>
+              <h2 id="plan-title" class="text-lg font-extrabold text-slate-900 leading-snug">自重筋トレ（上半身・体幹）</h2>
+              <p id="plan-goal" class="text-xs text-slate-500 mt-0.5">上半身の厚みづくり・デスクワークの姿勢改善</p>
+            </div>
+            <div id="day-status-pill" class="shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-800 text-slate-300">
+              未完了
+            </div>
+          </div>
+
+          <!-- Progress Bar -->
+          <div id="progress-wrap" class="space-y-1.5">
+            <div class="flex justify-between text-xs">
+              <span class="text-slate-400 font-medium">今日の進捗</span>
+              <span id="progress-text" class="text-sky-600 font-bold">0 / 0 セット</span>
+            </div>
+            <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+              <div id="progress-bar" class="h-full bg-gradient-to-r from-sky-500 to-emerald-400 rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <!-- Reschedule / Rest Controls -->
+          <div class="pt-1 border-t border-slate-100 flex flex-wrap items-center gap-2">
+            <button id="btn-mode-normal" type="button"
+              class="min-h-[38px] px-3 rounded-xl text-xs font-semibold border transition active:scale-95">
+              予定通り
+            </button>
+            <button id="btn-mode-min" type="button"
+              class="min-h-[38px] px-3 rounded-xl text-xs font-semibold border transition active:scale-95 flex items-center gap-1">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+              <span>5分ミニマム</span>
+            </button>
+            <button id="btn-mode-rest" type="button"
+              class="min-h-[38px] px-3 rounded-xl text-xs font-semibold border transition active:scale-95">
+              休養に変更
+            </button>
+            <button id="btn-mode-swap" type="button"
+              class="min-h-[38px] px-3 rounded-xl text-xs font-semibold border transition active:scale-95 flex items-center gap-1">
+              <i data-lucide="repeat" class="w-3.5 h-3.5"></i>
+              <span>別メニューに振替</span>
+            </button>
+          </div>
+
+          <!-- Swap Menu Picker (Hidden by default) -->
+          <div id="swap-picker" class="hidden bg-slate-50 rounded-xl p-3 border border-slate-200 space-y-2">
+            <p class="text-xs font-semibold text-slate-700">今日実施するメニューを選択：</p>
+            <div id="swap-options" class="grid grid-cols-2 gap-2"></div>
+          </div>
+        </div>
+
+        <!-- Timer Card -->
+        <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <i data-lucide="timer" class="w-4 h-4 text-orange-500"></i>
+              <h3 class="text-sm font-bold text-slate-900">ワークアウト・休憩タイマー</h3>
+            </div>
+            <label class="inline-flex items-center gap-1.5 cursor-pointer select-none">
+              <input id="chk-auto-rest" type="checkbox" class="sr-only peer" />
+              <div class="w-9 h-5 bg-slate-300 rounded-full peer peer-checked:bg-sky-500 relative transition after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
+              <span class="text-[11px] text-slate-500 font-medium">自動休憩</span>
+            </label>
+          </div>
+
+          <div class="flex items-center gap-4">
+            <!-- SVG Ring -->
+            <div class="relative w-24 h-24 shrink-0 flex items-center justify-center">
+              <svg class="w-24 h-24 -rotate-90" viewBox="0 0 96 96">
+                <circle cx="48" cy="48" r="41" stroke="#E2E8F0" stroke-width="7" fill="none" />
+                <circle id="timer-ring" cx="48" cy="48" r="41" stroke="#0EA5E9" stroke-width="7" fill="none"
+                  stroke-linecap="round" stroke-dasharray="257.61" stroke-dashoffset="0" class="ring-transition" />
+              </svg>
+              <div class="absolute inset-0 flex flex-col items-center justify-center">
+                <span id="timer-display" class="text-xl font-extrabold tracking-tight text-slate-900 tabular-nums">00:45</span>
+                <span id="timer-label" class="text-[10px] text-slate-400 font-medium">休憩</span>
+              </div>
+            </div>
+
+            <!-- Timer Controls & Presets -->
+            <div class="flex-1 space-y-2.5">
+              <div class="grid grid-cols-4 gap-1.5">
+                <button type="button" data-preset="30" data-label="30秒" class="timer-preset h-9 rounded-lg bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 hover:bg-sky-50 active:scale-95 transition">30秒</button>
+                <button type="button" data-preset="45" data-label="休憩" class="timer-preset h-9 rounded-lg bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 hover:bg-sky-50 active:scale-95 transition">45秒</button>
+                <button type="button" data-preset="60" data-label="休憩" class="timer-preset h-9 rounded-lg bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 hover:bg-sky-50 active:scale-95 transition">60秒</button>
+                <button type="button" data-preset="900" data-label="ラン" class="timer-preset h-9 rounded-lg bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 hover:bg-sky-50 active:scale-95 transition">15分</button>
+              </div>
+              <div class="flex items-center gap-2">
+                <button id="btn-timer-toggle" type="button"
+                  class="flex-1 h-11 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white font-bold text-sm flex items-center justify-center gap-1.5 active:scale-95 transition shadow-md shadow-orange-500/25">
+                  <i id="icon-timer-play" data-lucide="play" class="w-4 h-4 fill-current"></i>
+                  <span id="text-timer-toggle">スタート</span>
+                </button>
+                <button id="btn-timer-reset" type="button" aria-label="リセット"
+                  class="h-11 w-11 rounded-xl bg-slate-100 border border-slate-200 text-slate-600 flex items-center justify-center hover:bg-slate-200 active:scale-95 transition">
+                  <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Exercise List -->
+        <div id="exercise-list" class="space-y-3"></div>
+
+        <!-- Complete Day CTA -->
+        <button id="btn-complete-day" type="button"
+          class="w-full h-12 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition active:scale-[0.98] shadow-lg">
+          <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+          <span id="text-complete-day">今日の運動を完了として記録</span>
+        </button>
+
+        <!-- Post-workout Tip -->
+        <div class="bg-amber-50/80 rounded-2xl border border-amber-200/80 p-3.5 flex items-start gap-3">
+          <div class="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
+            <i data-lucide="utensils" class="w-4 h-4"></i>
+          </div>
+          <div class="text-xs text-slate-700 leading-relaxed">
+            <span class="font-bold text-slate-900">増量・睡眠のポイント：</span>
+            運動後はタンパク質＋炭水化物（おにぎり・卵・プロテインなど）を補給し、激しい運動は就寝の1〜2時間前までに終えるのがおすすめです。
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 2: HISTORY & STATS -->
+      <section id="view-history" class="hidden space-y-4">
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-3 gap-2.5">
+          <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-3.5 text-center">
+            <p class="text-[11px] text-slate-500 font-medium">今週の達成率</p>
+            <p id="stat-week-rate" class="text-2xl font-extrabold text-sky-600 mt-1 tabular-nums">0%</p>
+            <p id="stat-week-sub" class="text-[10px] text-slate-500 mt-0.5">0 / 5 予定</p>
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-3.5 text-center">
+            <p class="text-[11px] text-slate-500 font-medium">連続記録</p>
+            <p id="stat-streak" class="text-2xl font-extrabold text-emerald-600 mt-1 tabular-nums">0日</p>
+            <p class="text-[10px] text-slate-500 mt-0.5">達成・休養含む</p>
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-3.5 text-center">
+            <p class="text-[11px] text-slate-500 font-medium">累計実施</p>
+            <p id="stat-total" class="text-2xl font-extrabold text-orange-500 mt-1 tabular-nums">0回</p>
+            <p class="text-[10px] text-slate-500 mt-0.5">完了ワークアウト</p>
+          </div>
+        </div>
+
+        <!-- This Week Overview -->
+        <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-slate-900">今週のスケジュールと実績</h3>
+            <span id="week-range-label" class="text-[11px] text-slate-400"></span>
+          </div>
+          <div id="week-grid" class="grid grid-cols-7 gap-1.5"></div>
+          <div class="flex items-center justify-center gap-4 pt-1 text-[10px] text-slate-400">
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>完了</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-sky-500 inline-block"></span>振替完了</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-slate-600 inline-block"></span>休養</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full border border-slate-600 inline-block"></span>未実施</span>
+          </div>
+        </div>
+
+        <!-- Recent Activity Log -->
+        <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-slate-900">最近の記録</h3>
+            <button id="btn-reset-all" type="button" class="text-[11px] text-slate-500 hover:text-rose-400 transition">データ初期化</button>
+          </div>
+          <div id="history-log-list" class="space-y-2"></div>
+        </div>
+      </section>
+
+      <!-- VIEW 3: BODY & CONDITION -->
+      <section id="view-body" class="hidden space-y-4">
+        <!-- Input Form -->
+        <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-4 space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="text-sm font-bold text-slate-900">今日の体重・体調メモ</h2>
+            <span id="body-date-label" class="text-xs text-slate-500"></span>
+          </div>
+
+          <!-- Weight Stepper -->
+          <div class="space-y-1.5">
+            <label class="text-xs font-medium text-slate-400">体重 (kg)</label>
+            <div class="flex items-center gap-2">
+              <button id="btn-weight-minus" type="button" class="h-12 w-14 rounded-xl bg-slate-100 border border-slate-200 text-lg font-bold text-slate-700 hover:bg-slate-200 active:scale-95 transition">-0.1</button>
+              <input id="input-weight" type="number" step="0.1" min="30" max="150" placeholder="例: 59.0"
+                class="flex-1 h-12 rounded-xl bg-slate-50 border border-slate-200 text-center text-xl font-extrabold text-slate-900 focus:outline-none focus:border-sky-500 tabular-nums" />
+              <button id="btn-weight-plus" type="button" class="h-12 w-14 rounded-xl bg-slate-100 border border-slate-200 text-lg font-bold text-slate-700 hover:bg-slate-200 active:scale-95 transition">+0.1</button>
+            </div>
+          </div>
+
+          <!-- Condition Selector -->
+          <div class="space-y-1.5">
+            <label class="text-xs font-medium text-slate-400">体調・コンディション</label>
+            <div id="condition-buttons" class="grid grid-cols-5 gap-1.5"></div>
+          </div>
+
+          <!-- Memo -->
+          <div class="space-y-1.5">
+            <label for="input-memo" class="text-xs font-medium text-slate-400">一言メモ（睡眠・食事・筋肉痛など）</label>
+            <input id="input-memo" type="text" maxlength="80" placeholder="例：よく眠れた、夕食後にプロテイン追加"
+              class="w-full h-11 px-3 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-sky-500" />
+          </div>
+
+          <button id="btn-save-body" type="button"
+            class="w-full h-12 rounded-xl bg-gradient-to-r from-sky-500 to-cyan-500 hover:from-sky-400 hover:to-cyan-400 text-white font-bold text-sm active:scale-[0.98] transition shadow-md shadow-sky-500/25">
+            記録を保存する
+          </button>
+        </div>
+
+        <!-- Weight Chart -->
+        <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-slate-900">体重の推移</h3>
+            <span id="weight-diff-badge" class="text-xs font-semibold text-slate-400"></span>
+          </div>
+          <div id="weight-chart-wrap" class="relative h-44 w-full flex items-center justify-center"></div>
+        </div>
+
+        <!-- Body Logs -->
+        <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-4 space-y-3">
+          <h3 class="text-sm font-bold text-slate-900">体重・体調の履歴</h3>
+          <div id="body-log-list" class="space-y-2"></div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md z-30 bg-white/95 backdrop-blur-md border-t border-slate-200 px-3 py-2">
+      <div class="grid grid-cols-3 gap-2">
+        <button type="button" data-tab="today" class="nav-btn h-12 rounded-xl flex flex-col items-center justify-center gap-0.5 text-xs font-bold transition">
+          <i data-lucide="dumbbell" class="w-5 h-5"></i>
+          <span>今日</span>
+        </button>
+        <button type="button" data-tab="history" class="nav-btn h-12 rounded-xl flex flex-col items-center justify-center gap-0.5 text-xs font-bold transition">
+          <i data-lucide="calendar-check" class="w-5 h-5"></i>
+          <span>履歴</span>
+        </button>
+        <button type="button" data-tab="body" class="nav-btn h-12 rounded-xl flex flex-col items-center justify-center gap-0.5 text-xs font-bold transition">
+          <i data-lucide="activity" class="w-5 h-5"></i>
+          <span>体重・体調</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs shadow-xl opacity-0 pointer-events-none transition-all duration-300 whitespace-nowrap">
+      保存しました
+    </div>
+
+    <!-- In-page Confirm Modal -->
+    <div id="confirm-modal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="w-full max-w-xs bg-white border border-slate-200 rounded-2xl p-5 space-y-4 shadow-2xl">
+        <h3 class="text-base font-bold text-slate-900">データを初期化しますか？</h3>
+        <p class="text-xs text-slate-500 leading-relaxed">これまでの運動チェック履歴と体重・体調メモがすべて削除されます。この操作は元に戻せません。</p>
+        <div class="flex gap-2">
+          <button id="btn-confirm-cancel" type="button" class="flex-1 h-10 rounded-xl bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700">キャンセル</button>
+          <button id="btn-confirm-ok" type="button" class="flex-1 h-10 rounded-xl bg-rose-500 text-xs font-bold text-slate-900">初期化する</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // ---------- Weekly Program Definition ----------
+    // JS getDay(): 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
+    const WEEKLY_PLANS = {
+      1: {
+        id: 'mon',
+        short: '月',
+        category: '筋トレ',
+        badgeClass: 'bg-sky-100 text-sky-700 border-sky-200',
+        title: '自重筋トレ（上半身・体幹）',
+        duration: '約20分・18:00〜',
+        goal: '上半身の厚みづくり・デスクワークの姿勢改善',
+        isRestDefault: false,
+        exercises: [
+          { id: 'mon-wu', name: 'ウォームアップ（肩回し・腕振り）', target: '2分', restSec: 0, sets: 1 },
+          { id: 'mon-pu', name: 'プッシュアップ（腕立て伏せ）', target: '10〜15回', restSec: 45, sets: 3 },
+          { id: 'mon-pike', name: 'パイクプッシュアップ（肩・二の腕）', target: '8〜12回', restSec: 45, sets: 2 },
+          { id: 'mon-plank', name: 'プランク', target: '45秒キープ', restSec: 30, sets: 3 },
+          { id: 'mon-splank', name: 'サイドプランク（左右）', target: '各30秒', restSec: 30, sets: 2 },
+          { id: 'mon-cd', name: 'クールダウン（胸・肩・首ストレッチ）', target: '3分', restSec: 0, sets: 1 }
+        ]
+      },
+      2: {
+        id: 'tue',
+        short: '火',
+        category: '休養',
+        badgeClass: 'bg-slate-100 text-slate-600 border-slate-200',
+        title: '休養日（リカバリー）',
+        duration: '5分・ストレッチのみ',
+        goal: '筋肉の回復・疲労抜き（増量に大切な休息）',
+        isRestDefault: true,
+        exercises: [
+          { id: 'tue-st', name: '軽い全身ストレッチ（肩甲骨・股関節）', target: '5分', restSec: 0, sets: 1 }
+        ]
+      },
+      3: {
+        id: 'wed',
+        short: '水',
+        category: '筋トレ',
+        badgeClass: 'bg-sky-100 text-sky-700 border-sky-200',
+        title: '自重筋トレ（下半身・背中）',
+        duration: '約20分・18:00〜',
+        goal: '大きな筋肉を鍛えて増量の土台づくり',
+        isRestDefault: false,
+        exercises: [
+          { id: 'wed-wu', name: 'ウォームアップ（股関節・足首回し）', target: '2分', restSec: 0, sets: 1 },
+          { id: 'wed-sq', name: 'スクワット（ゆっくり下ろす）', target: '15回', restSec: 60, sets: 3 },
+          { id: 'wed-lg', name: 'バックランジ', target: '左右各10回', restSec: 45, sets: 3 },
+          { id: 'wed-hl', name: 'ヒップリフト（お尻・裏もも）', target: '15回', restSec: 30, sets: 3 },
+          { id: 'wed-sm', name: 'スーパーマン（背中・背筋）', target: '15回', restSec: 30, sets: 3 },
+          { id: 'wed-cd', name: 'クールダウン（太もも・ふくらはぎ）', target: '3分', restSec: 0, sets: 1 }
+        ]
+      },
+      4: {
+        id: 'thu',
+        short: '木',
+        category: 'ランニング',
+        badgeClass: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+        title: 'ランニング（軽めジョグ）',
+        duration: '20分・18:00〜',
+        goal: '集中力リフレッシュ・睡眠の質向上（会話できるペース）',
+        isRestDefault: false,
+        exercises: [
+          { id: 'thu-wu', name: '準備運動（足首・膝・股関節）', target: '2分', restSec: 0, sets: 1 },
+          { id: 'thu-run', name: 'ゆっくりジョグ（キロ6分半〜7分目安）', target: '15分（約2〜2.5km）', restSec: 0, sets: 1, timerSec: 900 },
+          { id: 'thu-cd', name: 'ウォーキング＆下半身ストレッチ', target: '3分', restSec: 0, sets: 1 }
+        ]
+      },
+      5: {
+        id: 'fri',
+        short: '金',
+        category: '格闘技',
+        badgeClass: 'bg-amber-100 text-amber-700 border-amber-200',
+        title: '格闘技クラブ',
+        duration: '60分・毎週金曜',
+        goal: '全身運動・有酸素＋瞬発力アップ',
+        isRestDefault: false,
+        exercises: [
+          { id: 'fri-ma', name: '格闘技クラブに参加（ウォームアップ〜実戦）', target: '60分', restSec: 0, sets: 1 },
+          { id: 'fri-nut', name: '運動後の水分・タンパク質補給', target: '終了後', restSec: 0, sets: 1 }
+        ]
+      },
+      6: {
+        id: 'sat',
+        short: '土',
+        category: 'ラン＋補強',
+        badgeClass: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+        title: 'ランニング＋全身補強',
+        duration: '約25分・18:00〜',
+        goal: '心肺機能アップ・全身引き締め（登山日は休養へ振替可）',
+        isRestDefault: false,
+        exercises: [
+          { id: 'sat-run', name: 'テンポアップ・ジョグ', target: '15分（約2.5〜3km）', restSec: 60, sets: 1, timerSec: 900 },
+          { id: 'sat-c1', name: 'サーキット① スクワット→腕立て→プランク30秒', target: '12回 / 10回 / 30秒', restSec: 30, sets: 2 },
+          { id: 'sat-cd', name: '全身ストレッチ＆栄養補給', target: '3分', restSec: 0, sets: 1 }
+        ]
+      },
+      0: {
+        id: 'sun',
+        short: '日',
+        category: '完全休養',
+        badgeClass: 'bg-slate-100 text-slate-600 border-slate-200',
+        title: '完全休養日（リカバリー）',
+        duration: 'オフ',
+        goal: '翌週に向けた完全リカバリー（軽い散歩はOK）',
+        isRestDefault: true,
+        exercises: [
+          { id: 'sun-rest', name: 'リラックス・十分な睡眠と食事', target: '終日', restSec: 0, sets: 1 }
+        ]
+      }
+    };
+
+    const EXTRA_MENUS = {
+      minimum: {
+        id: 'min',
+        short: '5分',
+        category: '5分ミニマム',
+        badgeClass: 'bg-violet-100 text-violet-700 border-violet-200',
+        title: 'やる気ゼロの日用・5分ミニマム',
+        duration: '約5分・これだけで100点',
+        goal: 'ハードルを極限まで下げて習慣の連続記録を守る',
+        isRestDefault: false,
+        exercises: [
+          { id: 'min-sq', name: 'スクワット（ゆっくり）', target: '10回 × 1セット', restSec: 0, sets: 1 },
+          { id: 'min-pu', name: 'プッシュアップ（膝つきでもOK）', target: '10回 × 1セット', restSec: 0, sets: 1 },
+          { id: 'min-pl', name: 'プランク', target: '30秒キープ', restSec: 0, sets: 1, timerSec: 30 },
+          { id: 'min-br', name: '肩回し＆深呼吸', target: '1分', restSec: 0, sets: 1 }
+        ]
+      },
+      strength_focus: {
+        id: 'str',
+        short: '筋トレ',
+        category: '筋トレ中心',
+        badgeClass: 'bg-sky-100 text-sky-700 border-sky-200',
+        title: 'ランなし・全身筋トレ（15分）',
+        duration: '約15分・増量優先',
+        goal: '消費カロリーを抑えつつ筋肉への刺激をしっかり入れる',
+        isRestDefault: false,
+        exercises: [
+          { id: 'str-sq', name: 'スクワット', target: '15回', restSec: 45, sets: 3 },
+          { id: 'str-pu', name: 'プッシュアップ（腕立て伏せ）', target: '12回', restSec: 45, sets: 3 },
+          { id: 'str-sm', name: 'スーパーマン（背筋）', target: '15回', restSec: 30, sets: 2 },
+          { id: 'str-pl', name: 'プランク', target: '45秒キープ', restSec: 30, sets: 2 }
+        ]
+      },
+      walk_stretch: {
+        id: 'wlk',
+        short: '散歩',
+        category: 'ランなし有酸素',
+        badgeClass: 'bg-teal-100 text-teal-700 border-teal-200',
+        title: '軽め散歩＆ストレッチ（15分）',
+        duration: '約15分・脳のリセット',
+        goal: '走らずに気分転換と集中力回復だけ行う',
+        isRestDefault: false,
+        exercises: [
+          { id: 'wlk-1', name: '外をぶらっと早歩き（音楽・ポッドキャストOK）', target: '10分', restSec: 0, sets: 1, timerSec: 600 },
+          { id: 'wlk-2', name: '帰宅後のストレッチ', target: '5分', restSec: 0, sets: 1 }
+        ]
+      }
+    };
+
+    const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
+    const CONDITION_OPTIONS = [
+      { value: 5, emoji: '🔥', label: '絶好調' },
+      { value: 4, emoji: '😊', label: '良い' },
+      { value: 3, emoji: '😐', label: '普通' },
+      { value: 2, emoji: '😮‍💨', label: 'やや疲れ' },
+      { value: 1, emoji: '😴', label: '疲労' }
+    ];
+
+    const STORAGE_KEY = 'nightrun_build_state_v1';
+
+    // ---------- Helpers ----------
+    function toDateStr(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function formatDisplayDate(dateStr) {
+      const [y, m, d] = dateStr.split('-').map(Number);
+      const dt = new Date(y, m - 1, d);
+      const w = ['日', '月', '火', '水', '木', '金', '土'][dt.getDay()];
+      return `${m}/${d}（${w}）`;
+    }
+
+    function loadState() {
+      const fallback = {
+        soundOn: true,
+        autoRest: true,
+        dayLogs: {},      // { "YYYY-MM-DD": { mode: "normal"|"rest"|"swap", swapDow: number|null, checks: { [exId]: boolean[] }, completed: boolean } }
+        bodyLogs: [],     // [{ date: "YYYY-MM-DD", weight: number|null, condition: number, memo: string }]
+        lastWeight: 59.0
+      };
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        return { ...fallback, ...parsed, dayLogs: parsed.dayLogs || {}, bodyLogs: parsed.bodyLogs || [] };
+      } catch (e) {
+        return fallback;
+      }
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (e) {
+        // Ignore quota/sandbox errors
+      }
+    }
+
+    // ---------- App State ----------
+    let state = loadState();
+    const todayDate = new Date();
+    const todayStr = toDateStr(todayDate);
+    let selectedDow = todayDate.getDay(); // Default to today's day of week
+    let activeTab = 'today';
+    let selectedCondition = 4;
+
+    // Timer state
+    let timerTotalSec = 45;
+    let timerRemainSec = 45;
+    let timerLabel = '休憩';
+    let timerRunning = false;
+    let timerInterval = null;
+    let audioCtx = null;
+
+    function getDateForDowInCurrentWeek(dow) {
+      const curr = new Date(todayDate);
+      const currDow = curr.getDay();
+      const diffToMon = currDow === 0 ? -6 : 1 - currDow;
+      const mon = new Date(curr);
+      mon.setDate(curr.getDate() + diffToMon);
+      const offset = dow === 0 ? 6 : dow - 1;
+      const target = new Date(mon);
+      target.setDate(mon.getDate() + offset);
+      return toDateStr(target);
+    }
+
+    function getOrInitDayLog(dateStr) {
+      if (!state.dayLogs[dateStr]) {
+        state.dayLogs[dateStr] = {
+          mode: 'normal',
+          swapDow: null,
+          checks: {},
+          completed: false
+        };
+      }
+      return state.dayLogs[dateStr];
+    }
+
+    function getActivePlanForDay(dow, dayLog) {
+      if (dayLog.mode === 'minimum') {
+        return EXTRA_MENUS.minimum;
+      }
+      if (dayLog.mode === 'rest') {
+        return {
+          ...WEEKLY_PLANS[2],
+          category: '休養へ変更',
+          title: '休養日（リカバリーに切替）',
+          duration: '5分・無理しない日',
+          goal: '疲労回復を優先して次の運動に備える',
+          isRestDefault: true
+        };
+      }
+      if (dayLog.mode === 'swap' && dayLog.swapDow !== null) {
+        if (typeof dayLog.swapDow === 'string' && EXTRA_MENUS[dayLog.swapDow]) {
+          const exMenu = EXTRA_MENUS[dayLog.swapDow];
+          return { ...exMenu, category: `振替・${exMenu.category}` };
+        }
+        if (WEEKLY_PLANS[dayLog.swapDow]) {
+          const swapped = WEEKLY_PLANS[dayLog.swapDow];
+          return { ...swapped, category: `振替・${swapped.category}` };
+        }
+      }
+      return WEEKLY_PLANS[dow];
+    }
+
+    // ---------- Sound (Web Audio API) ----------
+    function ensureAudio() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) audioCtx = new AudioContext();
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(() => {});
+      }
+    }
+
+    function playChime() {
+      if (!state.soundOn) return;
+      try {
+        ensureAudio();
+        if (!audioCtx) return;
+        const now = audioCtx.currentTime;
+        [587.33, 880].forEach((freq, idx) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.14);
+          gain.gain.setValueAtTime(0.001, now + idx * 0.14);
+          gain.gain.exponentialRampToValueAtTime(0.18, now + idx * 0.14 + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.14 + 0.35);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now + idx * 0.14);
+          osc.stop(now + idx * 0.14 + 0.36);
+        });
+      } catch (e) {}
+    }
+
+    function showToast(msg, colorClass = 'bg-emerald-500 text-slate-950') {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.className = `fixed top-16 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl font-bold text-xs shadow-xl transition-all duration-300 whitespace-nowrap ${colorClass}`;
+      el.style.opacity = '1';
+      el.style.pointerEvents = 'auto';
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.pointerEvents = 'none';
+      }, 2200);
+    }
+
+    // ---------- Timer Logic ----------
+    function formatTimer(sec) {
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    function renderTimer() {
+      document.getElementById('timer-display').textContent = formatTimer(timerRemainSec);
+      document.getElementById('timer-label').textContent = timerLabel;
+      const ring = document.getElementById('timer-ring');
+      const circumference = 257.61;
+      const ratio = timerTotalSec > 0 ? timerRemainSec / timerTotalSec : 0;
+      ring.style.strokeDashoffset = String(circumference * (1 - ratio));
+      ring.setAttribute('stroke', timerRunning ? '#F97316' : '#0EA5E9');
+
+      const toggleBtn = document.getElementById('btn-timer-toggle');
+      const toggleText = document.getElementById('text-timer-toggle');
+      const toggleIcon = document.getElementById('icon-timer-play');
+      if (timerRunning) {
+        toggleText.textContent = '一時停止';
+        toggleIcon.setAttribute('data-lucide', 'pause');
+        toggleBtn.classList.remove('from-orange-500', 'to-amber-500');
+        toggleBtn.classList.add('from-amber-500', 'to-yellow-500');
+      } else {
+        toggleText.textContent = 'スタート';
+        toggleIcon.setAttribute('data-lucide', 'play');
+        toggleBtn.classList.remove('from-amber-500', 'to-yellow-500');
+        toggleBtn.classList.add('from-orange-500', 'to-amber-500');
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function startTimer(sec = null, label = null) {
+      ensureAudio();
+      if (sec !== null) {
+        timerTotalSec = sec;
+        timerRemainSec = sec;
+      }
+      if (label !== null) timerLabel = label;
+      if (timerRemainSec <= 0) timerRemainSec = timerTotalSec;
+      clearInterval(timerInterval);
+      timerRunning = true;
+      renderTimer();
+      timerInterval = setInterval(() => {
+        if (timerRemainSec > 0) {
+          timerRemainSec -= 1;
+          renderTimer();
+        }
+        if (timerRemainSec <= 0) {
+          clearInterval(timerInterval);
+          timerRunning = false;
+          renderTimer();
+          playChime();
+          showToast(`${timerLabel}タイマー終了！次のセットへ`, 'bg-amber-400 text-slate-950');
+        }
+      }, 1000);
+    }
+
+    function pauseTimer() {
+      clearInterval(timerInterval);
+      timerRunning = false;
+      renderTimer();
+    }
+
+    function resetTimer() {
+      clearInterval(timerInterval);
+      timerRunning = false;
+      timerRemainSec = timerTotalSec;
+      renderTimer();
+    }
+
+    // ---------- Render TODAY View ----------
+    function renderTodayView() {
+      const targetDateStr = getDateForDowInCurrentWeek(selectedDow);
+      const dayLog = getOrInitDayLog(targetDateStr);
+      const plan = getActivePlanForDay(selectedDow, dayLog);
+
+      // Header subtitle
+      document.getElementById('header-date-label').textContent = `${formatDisplayDate(todayStr)} ・ 18:00 ルーティン`;
+
+      // Day pills
+      const pillsEl = document.getElementById('day-pills');
+      pillsEl.innerHTML = DAY_ORDER.map((dow) => {
+        const dStr = getDateForDowInCurrentWeek(dow);
+        const log = state.dayLogs[dStr];
+        const isSelected = dow === selectedDow;
+        const isToday = dStr === todayStr;
+        const isDone = log && log.completed;
+        let dot = '';
+        if (isDone) dot = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>';
+        else if (isToday) dot = '<span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>';
+        else dot = '<span class="w-1.5 h-1.5 rounded-full bg-transparent"></span>';
+
+        return `
+          <button type="button" data-dow="${dow}"
+            class="day-pill h-12 rounded-xl flex flex-col items-center justify-center gap-0.5 text-xs font-bold transition active:scale-95 ${
+              isSelected
+                ? 'bg-gradient-to-br from-sky-500 to-cyan-500 text-white shadow-md shadow-sky-500/25'
+                : isToday
+                  ? 'bg-sky-50 text-sky-700 border border-sky-300'
+                  : 'text-slate-500 hover:bg-slate-100'
+            }">
+            <span>${WEEKLY_PLANS[dow].short}</span>
+            ${dot}
+          </button>
+        `;
+      }).join('');
+
+      // Plan summary
+      const badge = document.getElementById('plan-badge');
+      badge.className = `inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${plan.badgeClass}`;
+      badge.textContent = plan.category;
+      document.getElementById('plan-duration').textContent = `${formatDisplayDate(targetDateStr)} ・ ${plan.duration}`;
+      document.getElementById('plan-title').textContent = plan.title;
+      document.getElementById('plan-goal').textContent = plan.goal;
+
+      // Status pill
+      const statusPill = document.getElementById('day-status-pill');
+      if (dayLog.completed) {
+        statusPill.textContent = dayLog.mode === 'rest' ? '休養記録済' : dayLog.mode === 'minimum' ? '5分達成' : dayLog.mode === 'swap' ? '振替完了' : '完了';
+        statusPill.className = 'shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-100 text-emerald-700 border border-emerald-200';
+      } else {
+        statusPill.textContent = '未完了';
+        statusPill.className = 'shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 text-slate-600';
+      }
+
+      // Mode buttons
+      const modeBtns = {
+        normal: document.getElementById('btn-mode-normal'),
+        minimum: document.getElementById('btn-mode-min'),
+        rest: document.getElementById('btn-mode-rest'),
+        swap: document.getElementById('btn-mode-swap')
+      };
+      Object.entries(modeBtns).forEach(([k, btn]) => {
+        const active = dayLog.mode === k;
+        btn.className = `min-h-[38px] px-3 rounded-xl text-xs font-semibold border transition active:scale-95 flex items-center gap-1 ${
+          active
+            ? 'bg-sky-500 border-sky-500 text-white shadow-sm shadow-sky-500/20'
+            : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+        }`;
+      });
+
+      // Swap picker (includes strength-only & walk alternatives without running)
+      const swapChoices = [
+        { key: 'strength_focus', tag: 'ランなし・おすすめ', title: EXTRA_MENUS.strength_focus.title },
+        { key: 'walk_stretch', tag: 'ランなし・軽め', title: EXTRA_MENUS.walk_stretch.title },
+        { key: 1, tag: '月曜メニュー', title: WEEKLY_PLANS[1].title },
+        { key: 3, tag: '水曜メニュー', title: WEEKLY_PLANS[3].title },
+        { key: 4, tag: '木曜メニュー', title: WEEKLY_PLANS[4].title },
+        { key: 6, tag: '土曜メニュー', title: WEEKLY_PLANS[6].title }
+      ];
+      const swapOptionsEl = document.getElementById('swap-options');
+      swapOptionsEl.innerHTML = swapChoices.map((c) => {
+        const isCurrentSwap = dayLog.mode === 'swap' && String(dayLog.swapDow) === String(c.key);
+        return `
+          <button type="button" data-swap-key="${c.key}"
+            class="swap-opt p-2.5 rounded-xl border text-left transition active:scale-95 ${
+              isCurrentSwap
+                ? 'bg-sky-50 border-sky-400 text-sky-900'
+                : 'bg-white border-slate-200 text-slate-700 hover:border-sky-300'
+            }">
+            <div class="text-[10px] font-bold text-sky-600">${c.tag}</div>
+            <div class="text-xs font-semibold truncate mt-0.5">${c.title}</div>
+          </button>
+        `;
+      }).join('');
+
+      // Exercises & Progress
+      let totalSets = 0;
+      let doneSets = 0;
+      const listEl = document.getElementById('exercise-list');
+      listEl.innerHTML = plan.exercises.map((ex) => {
+        const checkedArr = dayLog.checks[ex.id] || Array(ex.sets).fill(false);
+        totalSets += ex.sets;
+        doneSets += checkedArr.filter(Boolean).length;
+
+        const setButtons = Array.from({ length: ex.sets }, (_, idx) => {
+          const isChecked = !!checkedArr[idx];
+          return `
+            <button type="button" data-ex="${ex.id}" data-set="${idx}" data-rest="${ex.restSec}"
+              class="set-btn min-w-[48px] h-11 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1 border transition active:scale-95 ${
+                isChecked
+                  ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm shadow-emerald-500/25'
+                  : 'bg-slate-50 border-slate-200 text-slate-700 hover:border-sky-300'
+              }">
+              <i data-lucide="${isChecked ? 'check' : 'circle'}" class="w-3.5 h-3.5"></i>
+              <span>${ex.sets > 1 ? `${idx + 1}セット` : '完了'}</span>
+            </button>
+          `;
+        }).join('');
+
+        const timerText = ex.timerSec >= 60 ? `${Math.round(ex.timerSec / 60)}分計測` : `${ex.timerSec}秒計測`;
+        const timerBtn = ex.timerSec
+          ? `<button type="button" data-run-sec="${ex.timerSec}" data-run-label="${ex.timerSec >= 60 ? '計測' : 'キープ'}"
+               class="ex-timer-btn h-8 px-2.5 rounded-lg bg-orange-100 border border-orange-200 text-orange-700 text-[11px] font-bold flex items-center gap-1 active:scale-95 transition shrink-0">
+               <i data-lucide="play" class="w-3 h-3"></i><span>${timerText}</span>
+             </button>`
+          : ex.restSec > 0
+            ? `<span class="text-[11px] text-slate-500 font-medium">休憩 ${ex.restSec}秒</span>`
+            : '';
+
+        return `
+          <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-3.5 space-y-2.5">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <h4 class="text-sm font-bold text-slate-900 leading-snug">${ex.name}</h4>
+                <p class="text-xs text-sky-600 font-semibold mt-0.5">${ex.target}</p>
+              </div>
+              ${timerBtn}
+            </div>
+            <div class="flex flex-wrap gap-2">
+              ${setButtons}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      const pct = totalSets > 0 ? Math.round((doneSets / totalSets) * 100) : 0;
+      document.getElementById('progress-text').textContent = `${doneSets} / ${totalSets} セット (${pct}%)`;
+      document.getElementById('progress-bar').style.width = `${pct}%`;
+
+      // Complete CTA button
+      const completeBtn = document.getElementById('btn-complete-day');
+      const completeText = document.getElementById('text-complete-day');
+      if (dayLog.completed) {
+        completeBtn.className = 'w-full h-12 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition active:scale-[0.98] bg-emerald-100 border border-emerald-300 text-emerald-800';
+        completeText.textContent = 'この日の記録は完了済み（タップで解除）';
+      } else {
+        completeBtn.className = 'w-full h-12 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition active:scale-[0.98] shadow-lg bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white shadow-emerald-500/25';
+        completeText.textContent = dayLog.mode === 'rest' ? '休養日として記録する' : '今日の運動を完了として記録';
+      }
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    // ---------- Render HISTORY View ----------
+    function renderHistoryView() {
+      const weekDates = DAY_ORDER.map((dow) => ({
+        dow,
+        dateStr: getDateForDowInCurrentWeek(dow),
+        plan: WEEKLY_PLANS[dow]
+      }));
+
+      document.getElementById('week-range-label').textContent =
+        `${formatDisplayDate(weekDates[0].dateStr)} 〜 ${formatDisplayDate(weekDates[6].dateStr)}`;
+
+      let activePlanned = 0;
+      let activeDone = 0;
+
+      const weekGridEl = document.getElementById('week-grid');
+      weekGridEl.innerHTML = weekDates.map(({ dow, dateStr, plan }) => {
+        const log = state.dayLogs[dateStr];
+        const isRest = (log && log.mode === 'rest') || (!log && plan.isRestDefault);
+        if (!isRest) activePlanned += 1;
+        if (log && log.completed && !isRest) activeDone += 1;
+
+        let badgeStyle = 'bg-slate-100 border-slate-200 text-slate-400';
+        let iconName = 'minus';
+        if (log && log.completed) {
+          if (log.mode === 'rest') {
+            badgeStyle = 'bg-slate-200 border-slate-300 text-slate-700';
+            iconName = 'coffee';
+          } else if (log.mode === 'swap') {
+            badgeStyle = 'bg-sky-100 border-sky-300 text-sky-600';
+            iconName = 'repeat';
+          } else {
+            badgeStyle = 'bg-emerald-100 border-emerald-300 text-emerald-600';
+            iconName = 'check';
+          }
+        } else if (dateStr === todayStr) {
+          badgeStyle = 'bg-sky-50 border-sky-400 text-sky-600';
+        }
+
+        return `
+          <div class="flex flex-col items-center gap-1">
+            <span class="text-[11px] font-bold ${dateStr === todayStr ? 'text-sky-400' : 'text-slate-400'}">${plan.short}</span>
+            <div class="w-10 h-10 rounded-xl border flex items-center justify-center ${badgeStyle}">
+              <i data-lucide="${iconName}" class="w-4 h-4"></i>
+            </div>
+            <span class="text-[10px] text-slate-500">${dateStr.slice(8)}日</span>
+          </div>
+        `;
+      }).join('');
+
+      const weekRate = activePlanned > 0 ? Math.round((activeDone / activePlanned) * 100) : 0;
+      document.getElementById('stat-week-rate').textContent = `${weekRate}%`;
+      document.getElementById('stat-week-sub').textContent = `${activeDone} / ${activePlanned} 日`;
+
+      // Total completed & streak
+      const allCompletedDates = Object.entries(state.dayLogs)
+        .filter(([, l]) => l.completed)
+        .map(([d]) => d)
+        .sort();
+      const workoutCount = Object.values(state.dayLogs).filter((l) => l.completed && l.mode !== 'rest').length;
+      document.getElementById('stat-total').textContent = `${workoutCount}回`;
+
+      let streak = 0;
+      const cursor = new Date(todayDate);
+      if (!state.dayLogs[todayStr]?.completed) {
+        cursor.setDate(cursor.getDate() - 1);
+      }
+      while (true) {
+        const dStr = toDateStr(cursor);
+        if (state.dayLogs[dStr]?.completed) {
+          streak += 1;
+          cursor.setDate(cursor.getDate() - 1);
+        } else {
+          break;
+        }
+      }
+      document.getElementById('stat-streak').textContent = `${streak}日`;
+
+      // Recent log list
+      const logListEl = document.getElementById('history-log-list');
+      const recent = allCompletedDates.slice().reverse().slice(0, 14);
+      if (recent.length === 0) {
+        logListEl.innerHTML = '<p class="text-xs text-slate-500 py-4 text-center">まだ完了した記録がありません。「今日」タブからセットをチェックして完了してみましょう！</p>';
+      } else {
+        logListEl.innerHTML = recent.map((dStr) => {
+          const log = state.dayLogs[dStr];
+          const [y, m, d] = dStr.split('-').map(Number);
+          const dow = new Date(y, m - 1, d).getDay();
+          const plan = getActivePlanForDay(dow, log);
+          return `
+            <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+              <div>
+                <div class="text-xs font-bold text-slate-900">${formatDisplayDate(dStr)} ・ ${plan.title}</div>
+                <div class="text-[11px] text-slate-400 mt-0.5">${plan.category}</div>
+              </div>
+              <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-700">完了</span>
+            </div>
+          `;
+        }).join('');
+      }
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    // ---------- Render BODY View ----------
+    function renderBodyView() {
+      document.getElementById('body-date-label').textContent = formatDisplayDate(todayStr);
+
+      const todayEntry = state.bodyLogs.find((b) => b.date === todayStr);
+      const weightInput = document.getElementById('input-weight');
+      if (!weightInput.value) {
+        weightInput.value = todayEntry?.weight ?? state.lastWeight ?? 59.0;
+      }
+
+      const condEl = document.getElementById('condition-buttons');
+      condEl.innerHTML = CONDITION_OPTIONS.map((opt) => {
+        const active = selectedCondition === opt.value;
+        return `
+          <button type="button" data-cond="${opt.value}"
+            class="cond-btn py-2 rounded-xl border flex flex-col items-center gap-0.5 transition active:scale-95 ${
+              active
+                ? 'bg-sky-50 border-sky-400 text-sky-900'
+                : 'bg-slate-50 border-slate-200 text-slate-600'
+            }">
+            <span class="text-base">${opt.emoji}</span>
+            <span class="text-[10px] font-semibold">${opt.label}</span>
+          </button>
+        `;
+      }).join('');
+
+      // Weight chart
+      const weightEntries = state.bodyLogs
+        .filter((b) => typeof b.weight === 'number' && !Number.isNaN(b.weight))
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .slice(-14);
+
+      const chartWrap = document.getElementById('weight-chart-wrap');
+      const diffBadge = document.getElementById('weight-diff-badge');
+
+      if (weightEntries.length === 0) {
+        diffBadge.textContent = '';
+        chartWrap.innerHTML = '<p class="text-xs text-slate-500 text-center">体重を保存すると、ここに推移グラフが表示されます。</p>';
+      } else if (weightEntries.length === 1) {
+        diffBadge.textContent = `現在 ${weightEntries[0].weight.toFixed(1)} kg`;
+        chartWrap.innerHTML = `<p class="text-xs text-slate-500 text-center">1件記録済み（${weightEntries[0].weight.toFixed(1)} kg）。2件以上記録すると折れ線グラフになります。</p>`;
+      } else {
+        const firstW = weightEntries[0].weight;
+        const lastW = weightEntries[weightEntries.length - 1].weight;
+        const diff = lastW - firstW;
+        const sign = diff > 0 ? '+' : '';
+        diffBadge.textContent = `変化: ${sign}${diff.toFixed(1)} kg`;
+        diffBadge.className = `text-xs font-bold ${diff >= 0 ? 'text-emerald-600' : 'text-sky-400'}`;
+
+        const minW = Math.min(...weightEntries.map((e) => e.weight)) - 0.5;
+        const maxW = Math.max(...weightEntries.map((e) => e.weight)) + 0.5;
+        const span = Math.max(maxW - minW, 1);
+        const W = 320;
+        const H = 150;
+        const padX = 24;
+        const padY = 20;
+
+        const pts = weightEntries.map((e, i) => {
+          const x = padX + (i / (weightEntries.length - 1)) * (W - padX * 2);
+          const y = H - padY - ((e.weight - minW) / span) * (H - padY * 2);
+          return { x, y, ...e };
+        });
+
+        const pathD = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
+        const circles = pts.map((p) => `
+          <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4" fill="#0EA5E9" stroke="#FFFFFF" stroke-width="2" />
+          <text x="${p.x.toFixed(1)}" y="${(p.y - 8).toFixed(1)}" text-anchor="middle" fill="#334155" font-size="9" font-weight="700">${p.weight.toFixed(1)}</text>
+        `).join('');
+
+        chartWrap.innerHTML = `
+          <svg viewBox="0 0 ${W} ${H}" class="w-full h-full overflow-visible">
+            <line x1="${padX}" y1="${H - padY}" x2="${W - padX}" y2="${H - padY}" stroke="#E2E8F0" stroke-width="1" />
+            <path d="${pathD}" fill="none" stroke="#0EA5E9" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+            ${circles}
+          </svg>
+        `;
+      }
+
+      // Body log list
+      const listEl = document.getElementById('body-log-list');
+      const sortedLogs = state.bodyLogs.slice().sort((a, b) => b.date.localeCompare(a.date)).slice(0, 15);
+      if (sortedLogs.length === 0) {
+        listEl.innerHTML = '<p class="text-xs text-slate-500 text-center py-3">まだ記録がありません。</p>';
+      } else {
+        listEl.innerHTML = sortedLogs.map((entry) => {
+          const cond = CONDITION_OPTIONS.find((c) => c.value === entry.condition) || CONDITION_OPTIONS[2];
+          return `
+            <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200/80 gap-2">
+              <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-bold text-slate-900">${formatDisplayDate(entry.date)}</span>
+                  <span class="text-xs font-extrabold text-sky-600 tabular-nums">${entry.weight ? entry.weight.toFixed(1) + ' kg' : '-'}</span>
+                  <span class="text-xs">${cond.emoji} ${cond.label}</span>
+                </div>
+                ${entry.memo ? `<p class="text-[11px] text-slate-400 truncate mt-0.5">${entry.memo}</p>` : ''}
+              </div>
+              <button type="button" data-del-body="${entry.date}" aria-label="削除"
+                class="del-body-btn p-2 text-slate-500 hover:text-rose-400 transition shrink-0">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+          `;
+        }).join('');
+      }
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    // ---------- Tab Switching ----------
+    function switchTab(tab) {
+      activeTab = tab;
+      document.getElementById('view-today').classList.toggle('hidden', tab !== 'today');
+      document.getElementById('view-history').classList.toggle('hidden', tab !== 'history');
+      document.getElementById('view-body').classList.toggle('hidden', tab !== 'body');
+
+      document.querySelectorAll('.nav-btn').forEach((btn) => {
+        const isAct = btn.dataset.tab === tab;
+        btn.className = `nav-btn h-12 rounded-xl flex flex-col items-center justify-center gap-0.5 text-xs font-bold transition ${
+          isAct ? 'bg-sky-50 text-sky-600' : 'text-slate-500 hover:text-slate-800'
+        }`;
+      });
+
+      if (tab === 'today') renderTodayView();
+      if (tab === 'history') renderHistoryView();
+      if (tab === 'body') renderBodyView();
+    }
+
+    function renderSoundToggle() {
+      const icon = document.getElementById('icon-sound');
+      const label = document.getElementById('label-sound');
+      if (state.soundOn) {
+        icon.setAttribute('data-lucide', 'volume-2');
+        icon.className = 'w-4 h-4 text-sky-600';
+        label.textContent = '音 ON';
+      } else {
+        icon.setAttribute('data-lucide', 'volume-x');
+        icon.className = 'w-4 h-4 text-slate-500';
+        label.textContent = '音 OFF';
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
+    // ---------- Event Listeners ----------
+    document.getElementById('btn-sound-toggle').addEventListener('click', () => {
+      state.soundOn = !state.soundOn;
+      saveState();
+      renderSoundToggle();
+      if (state.soundOn) {
+        ensureAudio();
+        showToast('タイマー音をONにしました', 'bg-sky-500 text-slate-950');
+      } else {
+        showToast('タイマー音をOFFにしました', 'bg-slate-700 text-white');
+      }
+    });
+
+    const autoRestChk = document.getElementById('chk-auto-rest');
+    autoRestChk.checked = state.autoRest;
+    autoRestChk.addEventListener('change', (e) => {
+      state.autoRest = e.target.checked;
+      saveState();
+    });
+
+    document.querySelectorAll('.nav-btn').forEach((btn) => {
+      btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+    });
+
+    // Day pills delegation
+    document.getElementById('day-pills').addEventListener('click', (e) => {
+      const btn = e.target.closest('.day-pill');
+      if (!btn) return;
+      selectedDow = Number(btn.dataset.dow);
+      document.getElementById('swap-picker').classList.add('hidden');
+      renderTodayView();
+    });
+
+    // Mode buttons
+    document.getElementById('btn-mode-normal').addEventListener('click', () => {
+      const dStr = getDateForDowInCurrentWeek(selectedDow);
+      const log = getOrInitDayLog(dStr);
+      log.mode = 'normal';
+      log.swapDow = null;
+      document.getElementById('swap-picker').classList.add('hidden');
+      saveState();
+      renderTodayView();
+    });
+
+    document.getElementById('btn-mode-min').addEventListener('click', () => {
+      const dStr = getDateForDowInCurrentWeek(selectedDow);
+      const log = getOrInitDayLog(dStr);
+      log.mode = 'minimum';
+      log.swapDow = null;
+      document.getElementById('swap-picker').classList.add('hidden');
+      saveState();
+      renderTodayView();
+      showToast('5分ミニマムに切り替えました！これで十分OK', 'bg-violet-500 text-white');
+    });
+
+    document.getElementById('btn-mode-rest').addEventListener('click', () => {
+      const dStr = getDateForDowInCurrentWeek(selectedDow);
+      const log = getOrInitDayLog(dStr);
+      log.mode = 'rest';
+      log.swapDow = null;
+      document.getElementById('swap-picker').classList.add('hidden');
+      saveState();
+      renderTodayView();
+      showToast('休養日に切り替えました', 'bg-slate-700 text-white');
+    });
+
+    document.getElementById('btn-mode-swap').addEventListener('click', () => {
+      document.getElementById('swap-picker').classList.toggle('hidden');
+    });
+
+    document.getElementById('swap-options').addEventListener('click', (e) => {
+      const btn = e.target.closest('.swap-opt');
+      if (!btn) return;
+      const dStr = getDateForDowInCurrentWeek(selectedDow);
+      const log = getOrInitDayLog(dStr);
+      const rawKey = btn.dataset.swapKey;
+      log.mode = 'swap';
+      log.swapDow = EXTRA_MENUS[rawKey] ? rawKey : Number(rawKey);
+      document.getElementById('swap-picker').classList.add('hidden');
+      saveState();
+      renderTodayView();
+      const label = EXTRA_MENUS[rawKey] ? EXTRA_MENUS[rawKey].category : `${WEEKLY_PLANS[log.swapDow].short}曜メニュー`;
+      showToast(`${label}へ振替しました`, 'bg-sky-500 text-slate-950');
+    });
+
+    // Exercise set check & timer delegation
+    document.getElementById('exercise-list').addEventListener('click', (e) => {
+      const runBtn = e.target.closest('.ex-timer-btn');
+      if (runBtn) {
+        startTimer(Number(runBtn.dataset.runSec), runBtn.dataset.runLabel || 'ラン');
+        return;
+      }
+
+      const setBtn = e.target.closest('.set-btn');
+      if (!setBtn) return;
+      const exId = setBtn.dataset.ex;
+      const setIdx = Number(setBtn.dataset.set);
+      const restSec = Number(setBtn.dataset.rest);
+
+      const dStr = getDateForDowInCurrentWeek(selectedDow);
+      const log = getOrInitDayLog(dStr);
+      const plan = getActivePlanForDay(selectedDow, log);
+      const exObj = plan.exercises.find((x) => x.id === exId);
+      if (!exObj) return;
+
+      if (!log.checks[exId]) log.checks[exId] = Array(exObj.sets).fill(false);
+      const nextVal = !log.checks[exId][setIdx];
+      log.checks[exId][setIdx] = nextVal;
+
+      // Auto-start rest timer if checked and restSec > 0
+      if (nextVal && state.autoRest && restSec > 0) {
+        startTimer(restSec, '休憩');
+      }
+
+      saveState();
+      renderTodayView();
+    });
+
+    // Complete day CTA
+    document.getElementById('btn-complete-day').addEventListener('click', () => {
+      const dStr = getDateForDowInCurrentWeek(selectedDow);
+      const log = getOrInitDayLog(dStr);
+      log.completed = !log.completed;
+      saveState();
+      renderTodayView();
+      if (log.completed) {
+        playChime();
+        showToast('お疲れさまでした！記録を保存しました');
+      } else {
+        showToast('完了記録を解除しました', 'bg-slate-700 text-white');
+      }
+    });
+
+    // Timer controls
+    document.querySelectorAll('.timer-preset').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        pauseTimer();
+        timerTotalSec = Number(btn.dataset.preset);
+        timerRemainSec = timerTotalSec;
+        timerLabel = btn.dataset.label || 'タイマー';
+        renderTimer();
+      });
+    });
+
+    document.getElementById('btn-timer-toggle').addEventListener('click', () => {
+      if (timerRunning) pauseTimer();
+      else startTimer();
+    });
+
+    document.getElementById('btn-timer-reset').addEventListener('click', resetTimer);
+
+    // Body view controls
+    document.getElementById('btn-weight-minus').addEventListener('click', () => {
+      const inp = document.getElementById('input-weight');
+      const v = parseFloat(inp.value) || state.lastWeight || 59.0;
+      inp.value = Math.max(30, v - 0.1).toFixed(1);
+    });
+
+    document.getElementById('btn-weight-plus').addEventListener('click', () => {
+      const inp = document.getElementById('input-weight');
+      const v = parseFloat(inp.value) || state.lastWeight || 59.0;
+      inp.value = Math.min(150, v + 0.1).toFixed(1);
+    });
+
+    document.getElementById('condition-buttons').addEventListener('click', (e) => {
+      const btn = e.target.closest('.cond-btn');
+      if (!btn) return;
+      selectedCondition = Number(btn.dataset.cond);
+      renderBodyView();
+    });
+
+    document.getElementById('btn-save-body').addEventListener('click', () => {
+      const wVal = parseFloat(document.getElementById('input-weight').value);
+      const weight = Number.isNaN(wVal) ? null : Math.round(wVal * 10) / 10;
+      const memo = document.getElementById('input-memo').value.trim();
+
+      if (weight !== null) state.lastWeight = weight;
+      const idx = state.bodyLogs.findIndex((b) => b.date === todayStr);
+      const entry = { date: todayStr, weight, condition: selectedCondition, memo };
+      if (idx >= 0) state.bodyLogs[idx] = entry;
+      else state.bodyLogs.push(entry);
+
+      document.getElementById('input-memo').value = '';
+      saveState();
+      renderBodyView();
+      showToast('体重・体調を保存しました');
+    });
+
+    document.getElementById('body-log-list').addEventListener('click', (e) => {
+      const btn = e.target.closest('.del-body-btn');
+      if (!btn) return;
+      const dStr = btn.dataset.delBody;
+      state.bodyLogs = state.bodyLogs.filter((b) => b.date !== dStr);
+      saveState();
+      renderBodyView();
+      showToast('記録を削除しました', 'bg-slate-700 text-white');
+    });
+
+    // Reset all modal
+    document.getElementById('btn-reset-all').addEventListener('click', () => {
+      document.getElementById('confirm-modal').classList.remove('hidden');
+    });
+    document.getElementById('btn-confirm-cancel').addEventListener('click', () => {
+      document.getElementById('confirm-modal').classList.add('hidden');
+    });
+    document.getElementById('btn-confirm-ok').addEventListener('click', () => {
+      state.dayLogs = {};
+      state.bodyLogs = [];
+      saveState();
+      document.getElementById('confirm-modal').classList.add('hidden');
+      renderHistoryView();
+      showToast('データを初期化しました', 'bg-rose-500 text-white');
+    });
+
+    // ---------- Init ----------
+    renderSoundToggle();
+    renderTimer();
+    switchTab('today');
+  </script>
+</body>
+</html>
