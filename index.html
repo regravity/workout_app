@@ -446,6 +446,19 @@
       2: {
         id: 'tue',
         short: '火',
+        category: '休養',
+        badgeClass: 'bg-slate-100 text-slate-600 border-slate-200',
+        title: '休養日（リカバリー）',
+        duration: '5分・ストレッチのみ',
+        goal: '筋肉の回復・疲労抜き（増量に大切な休息）',
+        isRestDefault: true,
+        exercises: [
+          { id: 'tue-st', name: '軽い全身ストレッチ（肩甲骨・股関節）', target: '5分', restSec: 0, sets: 1 }
+        ]
+      },
+      3: {
+        id: 'wed',
+        short: '水',
         category: '筋トレ',
         badgeClass: 'bg-sky-100 text-sky-700 border-sky-200',
         title: '自重筋トレ（下半身・背中）',
@@ -453,25 +466,12 @@
         goal: '大きな筋肉を鍛えて増量の土台づくり（週1回目）',
         isRestDefault: false,
         exercises: [
-          { id: 'tue-wu', name: 'ウォームアップ（股関節・足首回し）', target: '2分', restSec: 0, sets: 1 },
-          { id: 'tue-sq', name: 'スクワット（ゆっくり下ろす）', target: '15回', restSec: 60, sets: 3 },
-          { id: 'tue-lg', name: 'バックランジ', target: '左右各10回', restSec: 45, sets: 3 },
-          { id: 'tue-hl', name: 'ヒップリフト（お尻・裏もも）', target: '15回', restSec: 30, sets: 3 },
-          { id: 'tue-sm', name: 'スーパーマン（背中・背筋）', target: '15回', restSec: 30, sets: 3 },
-          { id: 'tue-cd', name: 'クールダウン（太もも・ふくらはぎ）', target: '3分', restSec: 0, sets: 1 }
-        ]
-      },
-      3: {
-        id: 'wed',
-        short: '水',
-        category: '休養',
-        badgeClass: 'bg-slate-100 text-slate-600 border-slate-200',
-        title: '休養日（リカバリー）',
-        duration: '5分・ストレッチのみ',
-        goal: '中日の回復・疲労抜き（増量に大切な休息）',
-        isRestDefault: true,
-        exercises: [
-          { id: 'wed-st', name: '軽い全身ストレッチ（肩甲骨・股関節）', target: '5分', restSec: 0, sets: 1 }
+          { id: 'wed-wu', name: 'ウォームアップ（股関節・足首回し）', target: '2分', restSec: 0, sets: 1 },
+          { id: 'wed-sq', name: 'スクワット（ゆっくり下ろす）', target: '15回', restSec: 60, sets: 3 },
+          { id: 'wed-lg', name: 'バックランジ', target: '左右各10回', restSec: 45, sets: 3 },
+          { id: 'wed-hl', name: 'ヒップリフト（お尻・裏もも）', target: '15回', restSec: 30, sets: 3 },
+          { id: 'wed-sm', name: 'スーパーマン（背中・背筋）', target: '15回', restSec: 30, sets: 3 },
+          { id: 'wed-cd', name: 'クールダウン（太もも・ふくらはぎ）', target: '3分', restSec: 0, sets: 1 }
         ]
       },
       4: {
@@ -509,32 +509,32 @@
       6: {
         id: 'sat',
         short: '土',
-        category: '筋トレ',
-        badgeClass: 'bg-sky-100 text-sky-700 border-sky-200',
-        title: '自重筋トレ（下半身・背中）',
-        duration: '約20分・18:00〜',
-        goal: '週2回目の下半身刺激（登山がある週は休養へ振替）',
-        isRestDefault: false,
+        category: '休養・登山',
+        badgeClass: 'bg-slate-100 text-slate-600 border-slate-200',
+        title: '休養日（登山・外出優先）',
+        duration: 'オフ',
+        goal: '平日の疲労抜き＆登山がある日は思いきり楽しむ',
+        isRestDefault: true,
         exercises: [
-          { id: 'sat-wu', name: 'ウォームアップ（股関節・足首回し）', target: '2分', restSec: 0, sets: 1 },
-          { id: 'sat-sq', name: 'スクワット（ゆっくり下ろす）', target: '15回', restSec: 60, sets: 3 },
-          { id: 'sat-lg', name: 'バックランジ', target: '左右各10回', restSec: 45, sets: 3 },
-          { id: 'sat-hl', name: 'ヒップリフト（お尻・裏もも）', target: '15回', restSec: 30, sets: 3 },
-          { id: 'sat-sm', name: 'スーパーマン（背中・背筋）', target: '15回', restSec: 30, sets: 3 },
-          { id: 'sat-cd', name: 'クールダウン（太もも・ふくらはぎ）', target: '3分', restSec: 0, sets: 1 }
+          { id: 'sat-rest', name: 'リラックス・十分な睡眠と食事（登山日はそちらを優先）', target: '終日', restSec: 0, sets: 1 }
         ]
       },
       0: {
         id: 'sun',
         short: '日',
-        category: '完全休養',
-        badgeClass: 'bg-slate-100 text-slate-600 border-slate-200',
-        title: '完全休養日（リカバリー）',
-        duration: 'オフ',
-        goal: '翌週に向けた完全リカバリー（軽い散歩はOK）',
-        isRestDefault: true,
+        category: '筋トレ',
+        badgeClass: 'bg-sky-100 text-sky-700 border-sky-200',
+        title: '自重筋トレ（下半身・背中）',
+        duration: '約20分・18:00〜',
+        goal: '週2回目の下半身刺激・翌週に向けた土台づくり',
+        isRestDefault: false,
         exercises: [
-          { id: 'sun-rest', name: 'リラックス・十分な睡眠と食事', target: '終日', restSec: 0, sets: 1 }
+          { id: 'sun-wu', name: 'ウォームアップ（股関節・足首回し）', target: '2分', restSec: 0, sets: 1 },
+          { id: 'sun-sq', name: 'スクワット（ゆっくり下ろす）', target: '15回', restSec: 60, sets: 3 },
+          { id: 'sun-lg', name: 'バックランジ', target: '左右各10回', restSec: 45, sets: 3 },
+          { id: 'sun-hl', name: 'ヒップリフト（お尻・裏もも）', target: '15回', restSec: 30, sets: 3 },
+          { id: 'sun-sm', name: 'スーパーマン（背中・背筋）', target: '15回', restSec: 30, sets: 3 },
+          { id: 'sun-cd', name: 'クールダウン（太もも・ふくらはぎ）', target: '3分', restSec: 0, sets: 1 }
         ]
       }
     };
@@ -647,7 +647,7 @@
     }
 
     function getScaledExercise(ex, level) {
-      if (level <= 1 || ex.id.endsWith('-wu') || ex.id.endsWith('-cd') || ex.id.startsWith('fri-') || ex.id.startsWith('sun-') || ex.id.startsWith('wed-st') || ex.id.startsWith('min-')) {
+      if (level <= 1 || ex.id.endsWith('-wu') || ex.id.endsWith('-cd') || ex.id.startsWith('fri-') || ex.id.startsWith('sat-') || ex.id.startsWith('tue-st') || ex.id.startsWith('min-')) {
         return { ...ex, scaledLabel: '' };
       }
       const step = level - 1;
@@ -771,7 +771,7 @@
       }
       if (dayLog.mode === 'rest') {
         return {
-          ...WEEKLY_PLANS[3],
+          ...WEEKLY_PLANS[2],
           category: '休養へ変更',
           title: '休養日（リカバリーに切替）',
           duration: '5分・無理しない日',
@@ -988,7 +988,7 @@
         { key: 'strength_focus', tag: '全身筋トレ', title: EXTRA_MENUS.strength_focus.title },
         { key: 'walk_stretch', tag: '軽め散歩', title: EXTRA_MENUS.walk_stretch.title },
         { key: 1, tag: '月・木メニュー', title: WEEKLY_PLANS[1].title },
-        { key: 2, tag: '火・土メニュー', title: WEEKLY_PLANS[2].title }
+        { key: 3, tag: '水・日メニュー', title: WEEKLY_PLANS[3].title }
       ];
       const swapOptionsEl = document.getElementById('swap-options');
       swapOptionsEl.innerHTML = swapChoices.map((c) => {
